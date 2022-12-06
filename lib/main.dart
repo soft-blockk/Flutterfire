@@ -1,54 +1,87 @@
 import 'dart:convert';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:firebase_database/firebase_database.dart';
 
-void main() => runApp(httpWork());
-
-class httpWork extends StatefulWidget {
-  const httpWork({super.key});
-
-  @override
-  State<httpWork> createState() => _httpWorkState();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  FirebaseApp firebaseApp = await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(Flutterfire());
 }
 
-class _httpWorkState extends State<httpWork> {
-  final url =
-      "https://login-test-98bcc-default-rtdb.asia-southeast1.firebasedatabase.app/test";
+class Flutterfire extends StatefulWidget {
+  const Flutterfire({super.key});
 
-  void getting() async {
-    final getreq = await http.get(Uri.parse(url + ".json"));
-    final response = jsonDecode(getreq.body) as Map<String, dynamic>;
-    print(response);
+  @override
+  State<Flutterfire> createState() => _FlutterfireState();
+}
+
+class _FlutterfireState extends State<Flutterfire> {
+  late DatabaseReference _dbref;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    _dbref = FirebaseDatabase.instance.ref();
+    super.initState();
   }
 
-  void posting() async {
-    http.post(
-      Uri.parse(url + '.json'),
-      body: jsonEncode(
+  void adding() async {
+    try {
+      await _dbref.child('firetest').set(
         {
-          'text': 'hellow guys',
+          '_id': 1,
+          'name': 'parmode',
+          'age': 26,
+          'pensioner': true,
         },
-      ),
-      headers: {'Content-Type': 'application/json'},
-    ).catchError((onErro) => print(onErro));
+      ).then((value) => print('added sucessfully'));
+    } catch (e) {
+      print('CAUGHT AN ERROR');
+    }
   }
 
-  void deleteing() async {
-    print("triggerd");
-    http.delete(Uri.parse(url + "/-NH0LZ-6LjiBMH263bRi.json"));
+  var databaseResult = 'nodata';
+  void read() async {
+    try {
+      await _dbref.once().then((dataSnapshot) {
+        setState(() {
+          databaseResult = dataSnapshot.snapshot.value.toString();
+        });
+      });
+    } catch (e) {
+      print('CAUGHT AN ERROR');
+    }
   }
 
   void updating() async {
-    http.patch(
-      Uri.parse(url + "/-NH0RJMOCrPUFvF2cH5Z.json"),
-      body: jsonEncode(
+    try {
+      await _dbref.child('firetest').set(
         {
-          'text': 'sorry guys',
+          '_id': 2,
+          'name': 'suresh',
+          'age': 30,
+          'pensioner': true,
         },
-      ),
-      headers: {'Content-Type': 'application/json'},
-    ).catchError((onErro) => print(onErro));
+      ).then((value) => print('updated sucessfully'));
+    } catch (e) {
+      print('CAUGHT AN ERROR');
+    }
+  }
+
+  void delete() async {
+    try {
+      await _dbref
+          .child('firetest')
+          .remove()
+          .then((value) => print('deleted sucessfully'));
+    } catch (e) {
+      print('CAUGHT AN ERROR');
+    }
   }
 
   @override
@@ -75,9 +108,10 @@ class _httpWorkState extends State<httpWork> {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Text(databaseResult),
                 ElevatedButton(
                   onPressed: () {
-                    getting();
+                    read();
                   },
                   child: Text("GET"),
                   style: ElevatedButton.styleFrom(
@@ -86,7 +120,7 @@ class _httpWorkState extends State<httpWork> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    posting();
+                    adding();
                   },
                   child: Text("post"),
                   style: ElevatedButton.styleFrom(
@@ -104,7 +138,7 @@ class _httpWorkState extends State<httpWork> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    deleteing();
+                    delete();
                   },
                   child: Text("DELTE"),
                   style: ElevatedButton.styleFrom(
